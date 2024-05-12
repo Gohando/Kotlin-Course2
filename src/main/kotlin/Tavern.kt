@@ -1,4 +1,7 @@
 import  java.io.File
+import kotlin.random.Random
+import kotlin.random.nextInt
+
 private const val TAVERN_MASTER = "Baba Tanya"
 private const val TAVERN_NAME = "$TAVERN_MASTER's Folly"
 
@@ -44,7 +47,7 @@ fun visitTavern() {
     narrate("$heroName enters $TAVERN_NAME")
     narrate("The hero picks up a menu:")
     narrate("*** Welcome to $TAVERN_MASTER's Folly ***")
-    val menuTypes = List<String>(menuFormatted.size) { index ->
+    val menuTypes: List<String> = List(menuFormatted.size) { index ->
         val item = menuFormatted[index].substringBefore(";")
         item
     }
@@ -72,12 +75,16 @@ fun visitTavern() {
     while (patrons.size < 5) {
         val patronName = "${firstNames.random()} ${lastNames.random()}"
         patrons += patronName
-        patronGold += patronName to 6.0
+        patronGold += patronName to Random.nextInt(10..30).toDouble()
     }
     narrate("$heroName sees several patrons in the tavern:")
     narrate(patrons.joinToString())
     repeat(3) {
-        placeOrder(patrons.random(), menuItems.random(), patronGold)
+        val orderItemsNames: MutableList<String> = mutableListOf()
+        repeat(Random.nextInt(1..3)) {
+            orderItemsNames += menuItems.random()
+        }
+        placeOrder(patrons.random(), orderItemsNames, patronGold)
     }
     displayPatronBalances(patronGold)
 }
@@ -89,23 +96,24 @@ private fun displayPatronBalances(patronGold: Map<String, Double>) {
 }
 private fun placeOrder(
     patronName: String,
-    menuItemName: String,
+    orderItemsNames: List<String>,
     patronGold: MutableMap<String, Double>
 ) {
-    val itemPrice = menuItemPrices.getValue(menuItemName)
-
+    val orderPrice: Double = orderItemsNames.sumOf { menuItemPrices.getOrDefault(it, 0.0) }
     narrate("$patronName speaks with $TAVERN_MASTER to place an order")
-    if (itemPrice <= patronGold.getOrDefault(patronName, 0.0)) {
-        val action = when (menuItemTypes[menuItemName]) {
-            "shandy", "elixir" -> "poisons"
-            "meal" -> "serves"
-            else -> "hands"
+    if (orderPrice <= patronGold.getOrDefault(patronName, 0.0)) {
+        orderItemsNames.forEach {
+            val action = when (menuItemTypes[it]) {
+                "shandy", "elixir" -> "poisons"
+                "meal" -> "serves"
+                else -> "hands"
+            }
+            narrate("$TAVERN_MASTER $action $patronName a $it")
         }
-        narrate("$TAVERN_MASTER $action $patronName a $menuItemName")
-        narrate("$patronName pays $TAVERN_MASTER $itemPrice gold")
-        patronGold[patronName] = patronGold.getValue(patronName) - itemPrice
-        patronGold[TAVERN_MASTER] = patronGold.getValue(TAVERN_MASTER) + itemPrice
+        narrate("$patronName pays $TAVERN_MASTER $orderPrice gold")
+        patronGold[patronName] = patronGold.getValue(patronName) - orderPrice
+        patronGold[TAVERN_MASTER] = patronGold.getValue(TAVERN_MASTER) + orderPrice
     } else {
-        narrate("$TAVERN_MASTER says, \"You need more gold for a $menuItemName")
+        narrate("$TAVERN_MASTER says, \"You need more gold for your order\"")
     }
 }
