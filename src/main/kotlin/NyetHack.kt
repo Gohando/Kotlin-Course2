@@ -1,17 +1,23 @@
+var heroName: String = ""
 fun main() {
-    narrate("A hero enters the town of Kursk. What is their name?")
-    { message ->
-        "\u001b[33;1m$message\u001b[0m"
-    }
-    val heroName = readlnOrNull()
-    require(!heroName.isNullOrEmpty()) {
-        "The hero must have a name."
-    }
-
-    changeNarratorMood()
+    heroName = promptHeroName()
+    // changeNarratorMood()
     narrate("$heroName, ${createTitle(heroName)}, heads to the town square")
+    visitTavern()
 }
 
+private fun promptHeroName(): String {
+    narrate("A hero enters the town of Kursk. What is their name?",
+        ::makeYellow)
+    /*val input = readlnOrNull()
+    require(input != null && input.isNotEmpty()) {
+    "The hero must have a name."
+    }
+    return input*/
+    println("Madrigal")
+    return "Madrigal"
+}
+private fun makeYellow(message: String) = "\u001b[33;1m$message\u001b[0m"
 private fun createTitle(name: String): String {
     return when {
         name.all { it.isDigit() } -> "The Id"
