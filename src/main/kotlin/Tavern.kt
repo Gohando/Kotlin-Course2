@@ -5,32 +5,27 @@ import kotlin.random.nextInt
 private const val TAVERN_MASTER = "Baba Tanya"
 private const val TAVERN_NAME = "$TAVERN_MASTER's Folly"
 
-private val firstNames = setOf("Fotik", "Rubail", "Sophie", "Tariq")
-private val lastNames = setOf("Ironfoot", "Beansworth", "Saggins", "Downlooker")
+private val firstNames = setOf("Fotik", "Rubail", "Sophie", "Tariq", "Alex", "Konda")
+private val lastNames = setOf("Ironfoot", "Beansworth", "Saggins", "Downlooker", "Crocs", "Ponpus")
 
 private val menuData = File("data/tavern-menu-data.txt")
     .readText()
     .split("\n")
+    .map { it.split(",") }
 
-private val menuItems = List(menuData.size) { index ->
-    val (_, name, _) = menuData[index].split(",")
-    name
-}
+private val menuItems = menuData.map { (_, name, _) -> name}
 
-private val menuItemPrices: Map<String, Double> = List(menuData.size) {index ->
-    val (_, name, price) = menuData[index].split(",")
+private val menuItemPrices = menuData.associate { (_, name, price) ->
     name to price.toDouble()
-}.toMap()
-
-private val menuItemTypes: Map<String, String> = List(menuData.size) { index ->
-    val (type, name, _) = menuData[index].split(",")
-    name to type
-}.toMap()
-
-private val menuFormatted = MutableList(menuData.size) { index ->
-    val (type, name, price) = menuData[index].split(",")
-    "$type;$name,$price"
 }
+
+private val menuItemTypes = menuData.associate { (type, name, _) ->
+    name to type
+}
+
+private val menuFormatted = menuData.map { (type, name, price) ->
+    "$type;$name,$price"
+}.toMutableList()
 fun findMaxLengthOfMenuItem(menuItems: List<String>):Int {
     var maxLengthOfMenuItem = menuItems[0].length - menuItems[0].substringBefore(";").length
     for (item in menuItems) {
@@ -66,19 +61,24 @@ fun visitTavern() {
         val dottedString = ".".repeat(neededDots)
         println(it.replace(",", dottedString).substringAfter(";"))
     }
-
     val patrons: MutableSet<String> = mutableSetOf()
+        repeat(4) {
+            patrons += firstNames.shuffled()
+                .zip(lastNames.shuffled()) { firstName, lastName ->
+                    "$firstName $lastName"
+                }.toMutableSet()
+        }
     val patronGold: MutableMap<String, Double> = mutableMapOf(
         TAVERN_MASTER to 86.00,
-        heroName to 4.50
+        heroName to 4.50,
+        *patrons.map { it to Random.nextDouble(30.0)}.toTypedArray()
     )
-    while (patrons.size < 5) {
-        val patronName = "${firstNames.random()} ${lastNames.random()}"
-        patrons += patronName
-        patronGold += patronName to Random.nextInt(10..30).toDouble()
-    }
+
     narrate("$heroName sees several patrons in the tavern:")
     narrate(patrons.joinToString())
+
+    val itemOfDay = patrons.flatMap { getFavoriteMenuItems(it) }.groupBy {it}.maxBy { it.value.size }
+    println("The item of the day: ${itemOfDay.key}")
     repeat(3) {
         val orderItemsNames: MutableList<String> = mutableListOf()
         repeat(Random.nextInt(1..3)) {
@@ -87,11 +87,30 @@ fun visitTavern() {
         placeOrder(patrons.random(), orderItemsNames, patronGold)
     }
     displayPatronBalances(patronGold)
+    patrons
+        .filter { patron -> patronGold.getOrDefault(patron, 0.0) < 4.0 }
+        .also {departingPatrons ->
+            patrons -= departingPatrons.toSet()
+            patronGold -= departingPatrons.toSet()
+        }
+        .forEach { patron ->
+            narrate("$heroName sees $patron departing the tavern")
+        }
+    narrate(patrons.toString())
+    narrate("are left")
 }
 private fun displayPatronBalances(patronGold: Map<String, Double>) {
     narrate("$heroName intuitively knows how much money each patron has")
     patronGold.forEach { (patron, balance) ->
         narrate("$patron has ${"%.2f".format(balance)} gold")
+    }
+}
+private fun getFavoriteMenuItems(patron: String): List<String> {
+    return when (patron) {
+        "Fotik Ironfoot" -> menuItems.filter { menuItem ->
+            menuItemTypes[menuItem]?.contains("dessert") == true
+        }
+        else -> menuItems.shuffled().take(Random.nextInt(1..2))
     }
 }
 private fun placeOrder(
