@@ -1,3 +1,5 @@
+package com.gohando.nyethack
+
 import kotlin.random.Random
 import kotlin.random.nextInt
 
