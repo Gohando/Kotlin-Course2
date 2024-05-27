@@ -3,14 +3,17 @@ package com.gohando.nyethack
 class Player (
     initialName: String,
     val hometown: String = "Jousvillage",
-    var healthPoints: Int,
+    override var healthPoints: Int,
     val isImmoral: Boolean
-) {
-    var name = initialName
+) : Fightable {
+    override var name = initialName
         get() = field.replaceFirstChar { it.uppercase() }
         private set(value) {
             field = value.trim()
         }
+    override val diceCount = 3
+    override val diceSides = 4
+
     val title: String
         get() = when {
         name.all { it.isDigit() } -> "The Id"
@@ -54,6 +57,13 @@ class Player (
         narrate("$name thinks about their future")
         narrate("A fortune teller told Mardigal, \"$prophecy\"")
     }
+
+    override fun takeDamage(damage: Int) {
+        if (!isImmoral) {
+            healthPoints -= damage
+        }
+    }
+
     fun castFireball(numFireballs: Int = 2) {
         narrate("A grass with fireballs sprints into existence (x$numFireballs)")
     }

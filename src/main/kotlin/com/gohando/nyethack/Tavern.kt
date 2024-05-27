@@ -41,7 +41,7 @@ val maxLengthOfMenuItem = findMaxLengthOfMenuItem(menuFormatted)
 
 class Tavern : Room(TAVERN_NAME) {
 
-    val patrons: MutableSet<String> = mutableSetOf()
+    private val patrons: MutableSet<String> = mutableSetOf()
     init {
         repeat(4) {
             patrons += firstNames.shuffled()
@@ -50,12 +50,12 @@ class Tavern : Room(TAVERN_NAME) {
                 }.toMutableSet()
         }
     }
-    val patronGold: MutableMap<String, Double> = mutableMapOf(
+    private val patronGold: MutableMap<String, Double> = mutableMapOf(
         TAVERN_MASTER to 86.00,
         player.name to 4.50,
         *patrons.map { it to Random.nextDouble(30.0)}.toTypedArray()
     )
-    val itemOfDay = patrons.flatMap { getFavoriteMenuItems(it) }.groupBy {it}.maxBy { it.value.size }
+    private val itemOfDay = patrons.flatMap { getFavoriteMenuItems(it) }.groupBy {it}.maxBy { it.value.size }
 
     override val status = "Busy"
     override fun enterRoom() {
@@ -87,25 +87,11 @@ class Tavern : Room(TAVERN_NAME) {
         narrate("${player.name} sees several patrons in the tavern:")
         narrate(patrons.joinToString())
 
-        repeat(3) {
-            val orderItemsNames: MutableList<String> = mutableListOf()
-            repeat(Random.nextInt(1..3)) {
-                orderItemsNames += menuItems.random()
-            }
-            placeOrder(patrons.random(), orderItemsNames)
+        val orderItemsNames: MutableList<String> = mutableListOf()
+        repeat(Random.nextInt(1..3)) {
+            orderItemsNames += menuItems.random()
         }
-        displayPatronBalances(patronGold)
-        patrons
-            .filter { patron -> patronGold.getOrDefault(patron, 0.0) < 4.0 }
-            .also {departingPatrons ->
-                patrons -= departingPatrons.toSet()
-                patronGold -= departingPatrons.toSet()
-            }
-            .forEach { patron ->
-                narrate("${player.name} sees $patron departing the tavern")
-            }
-        narrate(patrons.toString())
-        narrate("are left")
+        placeOrder(patrons.random(), orderItemsNames)
     }
 
     private fun placeOrder(
@@ -129,13 +115,6 @@ class Tavern : Room(TAVERN_NAME) {
         } else {
             narrate("$TAVERN_MASTER says, \"You need more gold for your order\"")
         }
-    }
-}
-
-private fun displayPatronBalances(patronGold: Map<String, Double>) {
-    narrate("${player.name} intuitively knows how much money each patron has")
-    patronGold.forEach { (patron, balance) ->
-        narrate("$patron has ${"%.2f".format(balance)} gold")
     }
 }
 private fun getFavoriteMenuItems(patron: String): List<String> {
